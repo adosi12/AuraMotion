@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AuraMotion | AI Photo-to-Video Generator</title>
+  <meta name="description" content="An innovative, dark-mode AI-powered web editor to compile photos into stunning thematic videos with audio sync.">
+  <link rel="stylesheet" href="style.css">
+  <!-- Lucide Icons for clean aesthetic interface icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Application Header -->
+    <header class="glass-panel">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <i data-lucide="sparkles" style="color: #fff; width: 20px; height: 20px;"></i>
+        </div>
+        <span class="logo-text">AuraMotion</span>
+      </div>
+      <div class="api-badge" id="api-status">
+        <span class="api-badge-dot"></span>
+        <span>AI Engine Ready</span>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="main-workspace">
+      
+      <!-- Left Controls Column -->
+      <section class="control-panel">
+        
+        <!-- Media Upload & Management Panel -->
+        <div class="glass-panel panel-section">
+          <h2 class="panel-title">
+            <i data-lucide="image-plus" style="color: var(--primary); width: 18px; height: 18px;"></i>
+            Media & Music Upload
+          </h2>
+          
+          <!-- Image Upload Area (Supports up to 20 photos) -->
+          <div class="upload-zone" id="image-dropzone">
+            <input type="file" id="image-input" class="file-input" accept="image/*" multiple>
+            <div class="upload-icon">
+              <i data-lucide="cloud-lightning" style="width: 36px; height: 36px;"></i>
+            </div>
+            <div class="upload-text">Drag & Drop photos here</div>
+            <div class="upload-subtext">Supports PNG, JPG (Max 20 photos)</div>
+          </div>
+
+          <!-- Audio Upload Area with Waveform rendering -->
+          <div class="audio-uploader">
+            <input type="file" id="audio-input" class="file-input" accept="audio/mp3, audio/wav, audio/mpeg">
+            <button class="audio-input-btn" id="audio-btn">
+              <i data-lucide="music" style="width: 16px; height: 16px;"></i>
+              <span>Add Audio Track (MP3/WAV)</span>
+            </button>
+            
+            <!-- Dynamic Track Metadata Details -->
+            <div class="audio-track-info hidden" id="audio-meta">
+              <span id="audio-filename" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">TrackName.mp3</span>
+              <button class="audio-delete-btn" id="audio-remove">Remove</button>
+            </div>
+
+            <!-- Waveform Preview Panel -->
+            <div class="waveform-container">
+              <canvas class="waveform-canvas" id="waveform-canvas"></canvas>
+              <div class="waveform-placeholder" id="waveform-placeholder">Waveform Visualizer</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Generation Controls Panel -->
+        <div class="glass-panel panel-section">
+          <h2 class="panel-title">
+            <i data-lucide="sliders" style="color: var(--secondary); width: 18px; height: 18px;"></i>
+            Generation Tuning
+          </h2>
+
+          <!-- Theme Choices -->
+          <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px;">SELECT A THEME STYLE</label>
+          <div class="theme-grid">
+            <div class="theme-card active" data-theme="cinematic">
+              <div class="theme-card-icon">🎬</div>
+              <div class="theme-card-name">Cinematic</div>
+            </div>
+            <div class="theme-card" data-theme="retro">
+              <div class="theme-card-icon">📺</div>
+              <div class="theme-card-name">Retro VHS</div>
+            </div>
+            <div class="theme-card" data-theme="cyberpunk">
+              <div class="theme-card-icon">🌌</div>
+              <div class="theme-card-name">Cyberpunk</div>
+            </div>
+            <div class="theme-card" data-theme="minimalist">
+              <div class="theme-card-icon">◽</div>
+              <div class="theme-card-name">Minimalist</div>
+            </div>
+          </div>
+
+          <!-- Text Prompt Field -->
+          <label for="prompt-input" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px; margin-top: 6px;">CUSTOM PROMPT INSTRUCTIONS</label>
+          <textarea id="prompt-input" class="custom-prompt-input" rows="2" placeholder="Describe camera motions, mood, transitions (e.g., 'Slow zoom, cinematic lighting, warm mood fades...')"></textarea>
+
+          <!-- Core Action Button -->
+          <button class="generate-btn" id="generate-trigger">
+            <div class="spinner"></div>
+            <i data-lucide="wand-2" class="btn-icon" style="width: 18px; height: 18px;"></i>
+            <span class="btn-text">Generate AI Video</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Content Workspace (Innovation Hub) -->
+      <section class="workspace-right">
+        
+        <!-- Video Preview Player Workspace -->
+        <div class="glass-panel player-workspace">
+          <div class="player-header">
+            <div class="player-title">
+              <i data-lucide="video" style="color: var(--accent); width: 18px; height: 18px;"></i>
+              <span style="font-family: var(--font-display); font-weight: 700; font-size: 1rem;">Video Preview Player</span>
+            </div>
+            <div class="player-status-tag" id="player-status-tag">Draft State</div>
+          </div>
+
+          <!-- Canvas Player Viewport Wrapper -->
+          <div class="player-viewport-wrapper paused" id="player-viewport">
+            <canvas class="player-viewport-canvas" id="video-canvas"></canvas>
+            
+            <!-- Center Play/Pause Floating Overlay -->
+            <div class="player-center-btn" id="player-center-btn">
+              <i data-lucide="play" id="center-btn-icon" style="width: 32px; height: 32px; fill: #fff; color: #fff;"></i>
+            </div>
+            
+            <!-- Default Screen Message Overlay -->
+            <div class="player-overlay" id="player-overlay">
+              <div class="player-overlay-icon" style="color: var(--text-muted);">
+                <i data-lucide="clapperboard" style="width: 48px; height: 48px;"></i>
+              </div>
+              <h3 class="player-overlay-title">AuraMotion Canvas Ready</h3>
+              <p class="player-overlay-desc">Upload photos and a background track, then click "Generate AI Video" to compile your masterpiece.</p>
+            </div>
+          </div>
+
+          <!-- Video Controller Toolbar -->
+          <div class="player-controls">
+            <!-- Time scrubber slider line -->
+            <div class="timeline-slider-container">
+              <span class="time-display" id="time-current">00:00</span>
+              <input type="range" class="seek-slider" id="seek-slider" value="0" min="0" max="100" step="0.1" disabled>
+              <span class="time-display end" id="time-total">00:00</span>
+            </div>
+
+            <!-- Player button row options -->
+            <div class="controls-buttons-bar">
+              <div class="left-controls">
+                <button class="icon-btn" id="btn-restart" title="Restart Playback" disabled>
+                  <i data-lucide="skip-back" style="width: 16px; height: 16px;"></i>
+                </button>
+                <button class="icon-btn primary-toggle" id="btn-play" title="Play / Pause" disabled>
+                  <i data-lucide="play" id="play-icon" style="width: 16px; height: 16px; fill: #fff;"></i>
+                </button>
+                <div class="volume-container">
+                  <button class="icon-btn" id="btn-mute" title="Mute Audio">
+                    <i data-lucide="volume-2" id="mute-icon" style="width: 16px; height: 16px;"></i>
+                  </button>
+                  <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.7">
+                </div>
+              </div>
+              
+              <div class="right-controls">
+                <button class="btn-secondary" id="btn-shuffle" title="Shuffle sequence" disabled>
+                  <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i>
+                  <span>Shuffle Grid</span>
+                </button>
+                <button class="btn-secondary" id="btn-fullscreen" title="Toggle Fullscreen" disabled>
+                  <i data-lucide="maximize" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post-Processing Storyboard / Timeline -->
+        <div class="glass-panel storyboard-workspace">
+          <div class="storyboard-header">
+            <h2 class="panel-title" style="margin-bottom: 0;">
+              <i data-lucide="layers" style="color: var(--primary); width: 18px; height: 18px;"></i>
+              Storyboard Timeline
+            </h2>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="storyboard-subtitle">Drag to reorder. Hover to edit.</span>
+              <span class="photo-counter" id="photo-counter">0 / 20 Photos</span>
+            </div>
+          </div>
+
+          <!-- Horizontal scrolling track wrapper -->
+          <div class="storyboard-track-outer">
+            <div class="storyboard-grid" id="storyboard-grid">
+              
+              <!-- Initial Empty State -->
+              <div class="storyboard-empty" id="storyboard-empty">
+                <i data-lucide="layout-grid" style="width: 24px; height: 24px; opacity: 0.4;"></i>
+                <span>No photos uploaded. Upload files to organize sequence.</span>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+
+        <!-- External Editing & Direct Export Panel -->
+        <div class="glass-panel export-workspace">
+          <h2 class="panel-title">
+            <i data-lucide="share-2" style="color: var(--secondary); width: 18px; height: 18px;"></i>
+            Advanced Export & External Integration
+          </h2>
+          
+          <div class="export-grid">
+            
+            <!-- InShot Deep link exporter -->
+            <div class="export-card">
+              <div class="export-card-info">
+                <div class="export-card-logo logo-inshot">IS</div>
+                <div>
+                  <div class="export-card-title">Direct to InShot</div>
+                  <div class="export-card-desc">Sync raw footage with project cues</div>
+                </div>
+              </div>
+              <div class="tooltip-trigger">
+                <button class="export-card-btn" id="export-inshot">
+                  <span>Export</span>
+                  <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+                </button>
+                <div class="tooltip-box">
+                  Want more precision? Export your project directly to InShot with custom layer data.
+                </div>
+              </div>
+            </div>
+
+            <!-- YouCut Deep link exporter -->
+            <div class="export-card">
+              <div class="export-card-info">
+                <div class="export-card-logo logo-youcut">YC</div>
+                <div>
+                  <div class="export-card-title">Direct to YouCut</div>
+                  <div class="export-card-desc">Render directly using timeline presets</div>
+                </div>
+              </div>
+              <div class="tooltip-trigger">
+                <button class="export-card-btn" id="export-youcut">
+                  <span>Export</span>
+                  <i data-lucide="external-link" style="width: 12px; height: 12px;"></i>
+                </button>
+                <div class="tooltip-box">
+                  Want more precision? Export your project directly to YouCut to add mobile transitions and filters.
+                </div>
+              </div>
+            </div>
+
+            <!-- Local high fidelity video exporter -->
+            <div class="export-card">
+              <div class="export-card-info">
+                <div class="export-card-logo logo-local">HD</div>
+                <div>
+                  <div class="export-card-title">High Quality Render</div>
+                  <div class="export-card-desc">Compile WebM file (Canvas + Audio)</div>
+                </div>
+              </div>
+              <div class="tooltip-trigger">
+                <button class="export-card-btn" id="export-render" disabled>
+                  <span>Compile</span>
+                  <i data-lucide="download" style="width: 12px; height: 12px;"></i>
+                </button>
+                <div class="tooltip-box">
+                  Render and download the generated canvas animation along with the background music.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Photo Edit / Crop Floating Modal Overlay -->
+  <div class="modal-overlay" id="crop-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Photo Settings</h3>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Interactive Cropping Box Simulation -->
+        <div class="modal-preview-box">
+          <img src="" alt="Edit Preview" class="modal-preview-img" id="crop-preview-img">
+          <div class="crop-overlay-lines"></div>
+        </div>
+        
+        <!-- Controls inside modal -->
+        <div class="modal-controls">
+          <!-- Crop Zoom slider -->
+          <div class="crop-range-row">
+            <div class="crop-range-header">
+              <span>Zoom Scale</span>
+              <span id="zoom-value">1.0x</span>
+            </div>
+            <input type="range" class="seek-slider" id="crop-zoom" min="1" max="2.5" step="0.05" value="1">
+          </div>
+
+          <!-- Rotation degrees -->
+          <div class="crop-range-row">
+            <div class="crop-range-header">
+              <span>Rotate Degrees</span>
+              <span id="rotate-value">0°</span>
+            </div>
+            <input type="range" class="seek-slider" id="crop-rotate" min="-180" max="180" step="90" value="0">
+          </div>
+
+          <!-- Photo Caption -->
+          <div class="crop-range-row" style="margin-top: 0.75rem;">
+            <label for="photo-caption" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">PHOTO CAPTION OVERLAY</label>
+            <input type="text" id="photo-caption" class="custom-prompt-input" placeholder="e.g. Beautiful Sunset, Day 1...">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.5rem;">
+            <div class="crop-range-row">
+              <label for="caption-color" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">TEXT COLOR</label>
+              <input type="color" id="caption-color" value="#ffffff" style="width: 100%; height: 35px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: none; cursor: pointer;">
+            </div>
+            <div class="crop-range-row">
+              <div class="crop-range-header">
+                <span>FONT SIZE</span>
+                <span id="size-value">28px</span>
+              </div>
+              <input type="range" class="seek-slider" id="caption-size" min="16" max="64" step="2" value="28">
+            </div>
+          </div>
+
+          <div class="crop-range-row" style="margin-top: 0.75rem;">
+            <label for="caption-style" style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">CAPTION STYLE</label>
+            <select id="caption-style" class="custom-prompt-input" style="width:100%; height:35px; padding: 0.25rem 0.5rem; background: #0c0c14; border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-primary);">
+              <option value="subtitle">Subtitle Box (Translucent Dark)</option>
+              <option value="neon">Neon Glow (Ambient shadow)</option>
+              <option value="minimal">Minimalist (Subtle Drop Shadow)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modal Buttons -->
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modal-cancel-btn">Cancel</button>
+        <button class="generate-btn" id="modal-save-btn" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; box-shadow: none;">
+          Apply & Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
