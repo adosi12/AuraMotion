@@ -303,6 +303,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 2. AI GENERATION CONTROLS ---
 
+  function parseCaptionsFromPrompt(promptText) {
+    if (!promptText) return;
+    
+    // Reset all captions to empty strings first so if they change/delete prompt text, it updates
+    uploadedImages.forEach(img => {
+      img.caption = "";
+    });
+
+    // Strategy: Split by lines and commas to find statements
+    const segments = promptText.split(/[\n\.,;]+/);
+    
+    segments.forEach(segment => {
+      const seg = segment.trim();
+      if (!seg) return;
+
+      // Pattern A: Match 'photo 1: caption text' or 'image 1 - caption text' or '1: caption text'
+      // Group 1: Photo Number, Group 2: Caption Text
+      const patternA = /(?:photo|image|pic|slide|#)?\s*(\d+)\s*[\s:-]+\s*["'“‘]?([^"'”’]+)["'”’]?/i;
+      
+      // Pattern B: Match 'add caption "caption text" on photo 1' or 'caption "text" to image 2'
+      // Group 1: Caption Text, Group 2: Photo Number
+      const patternB = /(?:caption|text|label|subtitle)\s*["'“‘]?([^"'”’]+)["'”’]?\s*(?:on|to|for|at|in)?\s*(?:photo|image|pic|slide|#)?\s*(\d+)/i;
+
+      let matched = false;
+
+      // Try Pattern B first (higher specificity, e.g. caption "text" on photo 1)
+      const matchB = seg.match(patternB);
+      if (matchB) {
+        const text = matchB[1].trim();
+        const num = parseInt(matchB[2], 10);
+        const index = num - 1;
+        if (index >= 0 && index < uploadedImages.length) {
+          uploadedImages[index].caption = text;
+          matched = true;
+        }
+      }
+
+      // Try Pattern A if B didn't match (e.g., photo 1: text)
+      if (!matched) {
+        const matchA = seg.match(patternA);
+        if (matchA) {
+          const num = parseInt(matchA[1], 10);
+          const text = matchA[2].trim();
+          const index = num - 1;
+          const isJustWords = /^\d+$/.test(text); // Ignore if caption is just a number
+          if (index >= 0 && index < uploadedImages.length && !isJustWords && text.length > 1) {
+            uploadedImages[index].caption = text;
+            matched = true;
+          }
+        }
+      }
+    });
+
+    // Update storyboard cards immediately
+    updateStoryboard();
+  }
+
   // Theme selection toggles
   themeCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -322,6 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("Please upload at least one photo before generating.");
       return;
     }
+
+    // Parse captions from custom prompt instructions
+    parseCaptionsFromPrompt(promptInput.value);
 
     generateTrigger.classList.add('generating');
     generateTrigger.querySelector('.btn-text').textContent = "Processing Frames...";
@@ -386,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentTime = 0;
     recalculateDuration();
+    updatePlayPauseUI(false); // Reset icons to default paused state
     drawCurrentFrame();
   }
 
@@ -731,6 +792,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- PLAYBACK CONTROL LOOPS ---
 
+  function updatePlayPauseUI(playing) {
+    const playIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play" style="fill: #fff;"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
+    const pauseIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pause" style="fill: #fff;"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
+    
+    const centerPlaySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play" style="fill: #fff; margin-left: 4px;"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
+    const centerPauseSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pause" style="fill: #fff;"><rect width="4" height="16" x="14" y="4" rx="1"/><rect width="4" height="16" x="6" y="4" rx="1"/></svg>`;
+
+    if (playing) {
+      btnPlay.innerHTML = pauseIconSvg;
+      playerCenterBtn.innerHTML = centerPauseSvg;
+      playerViewport.classList.remove('paused');
+    } else {
+      btnPlay.innerHTML = playIconSvg;
+      playerCenterBtn.innerHTML = centerPlaySvg;
+      playerViewport.classList.add('paused');
+    }
+  }
+
   function startPlayback() {
     if (uploadedImages.length === 0) return;
     isPlaying = true;
@@ -743,11 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activeAudio.play().catch(err => console.log("Audio play fail:", err));
     }
 
-    // Toggle button icons & viewport states
-    playIcon.setAttribute('data-lucide', 'pause');
-    centerBtnIcon.setAttribute('data-lucide', 'pause');
-    lucide.createIcons();
-    playerViewport.classList.remove('paused');
+    updatePlayPauseUI(true);
 
     animationFrameId = requestAnimationFrame(playbackLoop);
   }
@@ -758,11 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activeAudio.pause();
     }
 
-    // Toggle button icons & viewport states
-    playIcon.setAttribute('data-lucide', 'play');
-    centerBtnIcon.setAttribute('data-lucide', 'play');
-    lucide.createIcons();
-    playerViewport.classList.add('paused');
+    updatePlayPauseUI(false);
 
     if (animationFrameId) {
       cancelAnimationFrame(animationFrameId);
@@ -1140,7 +1211,11 @@ document.addEventListener('DOMContentLoaded', () => {
       slides: uploadedImages.map(img => ({
         name: img.name,
         zoom: img.zoom,
-        rotate: img.rotate
+        rotate: img.rotate,
+        caption: img.caption || "",
+        captionColor: img.captionColor || "#ffffff",
+        captionSize: img.captionSize || 28,
+        captionStyle: img.captionStyle || "subtitle"
       }))
     };
 
