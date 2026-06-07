@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AuraMotion | AI Photo-to-Video Generator</title>
   <meta name="description" content="An innovative, dark-mode AI-powered web editor to compile photos into stunning thematic videos with audio sync.">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.2">
   <!-- Lucide Icons for clean aesthetic interface icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -70,6 +70,31 @@
               <div class="waveform-placeholder" id="waveform-placeholder">Waveform Visualizer</div>
             </div>
           </div>
+
+          <!-- Jamendo Music Search & AI Suggestion -->
+          <div class="music-search-container" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+              <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">FIND MUSIC ONLINE</label>
+              <button class="btn-secondary" id="suggest-music-btn" style="padding: 0.25rem 0.5rem; font-size: 0.65rem; border-color: var(--secondary); color: var(--secondary);">
+                <i data-lucide="sparkles" style="width: 10px; height: 10px; margin-right: 4px;"></i>
+                Suggest Based on Prompt
+              </button>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <input type="text" id="music-search-input" placeholder="Search Genre (e.g. Cinematic, Lo-fi)" style="flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.5rem; font-size: 0.75rem; color: #fff;">
+              <button id="music-search-btn" class="btn-secondary" style="padding: 0 0.75rem;">
+                <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+
+            <div id="music-results-container" class="music-results" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto; padding-right: 4px;">
+              <!-- Results populated via JS -->
+              <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; padding: 1rem;">
+                Search for tracks or use the "Suggest" button to find music matching your project mood.
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- AI Generation Controls Panel -->
@@ -78,6 +103,14 @@
             <i data-lucide="sliders" style="color: var(--secondary); width: 18px; height: 18px;"></i>
             Generation Tuning
           </h2>
+
+          <!-- Aspect Ratio Selection -->
+          <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px;">ASPECT RATIO</label>
+          <div class="aspect-ratio-selector" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+            <button class="btn-secondary ratio-btn active" data-ratio="16:9" style="padding: 0.4rem; font-size: 0.7rem;">16:9</button>
+            <button class="btn-secondary ratio-btn" data-ratio="9:16" style="padding: 0.4rem; font-size: 0.7rem;">9:16</button>
+            <button class="btn-secondary ratio-btn" data-ratio="1:1" style="padding: 0.4rem; font-size: 0.7rem;">1:1</button>
+          </div>
 
           <!-- Theme Choices -->
           <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px;">SELECT A THEME STYLE</label>
@@ -98,6 +131,18 @@
               <div class="theme-card-icon">◽</div>
               <div class="theme-card-name">Minimalist</div>
             </div>
+          </div>
+
+          <!-- Beat Sync Toggle -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.75rem; padding: 0.5rem; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <i data-lucide="zap" style="width: 14px; height: 14px; color: var(--secondary);"></i>
+              <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">Audio Beat-Sync</span>
+            </div>
+            <label class="switch" style="position: relative; display: inline-block; width: 34px; height: 18px;">
+              <input type="checkbox" id="beatsync-toggle" style="opacity: 0; width: 0; height: 0;">
+              <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 34px;"></span>
+            </label>
           </div>
 
           <!-- Text Prompt Field -->
@@ -266,16 +311,16 @@
                 <div class="export-card-logo logo-local">HD</div>
                 <div>
                   <div class="export-card-title">High Quality Render</div>
-                  <div class="export-card-desc">Compile WebM file (Canvas + Audio)</div>
+                  <div class="export-card-desc">Export WebM (Canvas + Audio)</div>
                 </div>
               </div>
               <div class="tooltip-trigger">
                 <button class="export-card-btn" id="export-render" disabled>
-                  <span>Compile</span>
+                  <span>Download Video</span>
                   <i data-lucide="download" style="width: 12px; height: 12px;"></i>
                 </button>
                 <div class="tooltip-box">
-                  Render and download the generated canvas animation along with the background music.
+                  Render and download your final video project.
                 </div>
               </div>
             </div>
@@ -364,6 +409,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

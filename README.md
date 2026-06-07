@@ -88,7 +88,7 @@ To link this local workspace and push it to your remote account (e.g., GitHub):
 2. Open terminal in the project folder and run:
    ```bash
    # Add your GitHub repository remote
-   git remote add origin https://github.com/YOUR_USERNAME/AuraMotion.git
+   git remote add origin https://github.com/adosi12/AuraMotion.git
    
    # Rename default branch to main
    git branch -M main
